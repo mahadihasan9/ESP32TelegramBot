@@ -1,0 +1,14 @@
+TelegramBot	KEYWORD1
+getJson	KEYWORD1
+
+begin	KEYWORD2
+get	KEYWORD2
+post	KEYWORD2
+status	KEYWORD2
+available	KEYWORD2
+name	KEYWORD2
+id	KEYWORD2
+time	KEYWORD2
+message	KEYWORD2
+lastError	KEYWORD2
+lastErrorMessage	KEYWORD2
