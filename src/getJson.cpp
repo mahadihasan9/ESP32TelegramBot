@@ -28,7 +28,11 @@ String getJson::name() const {
     return _firstName;
 }
 
-long getJson::id() const {
+int64_t getJson::id() const {
+    return _chatId;
+}
+
+int64_t getJson::chatId() const {
     return _chatId;
 }
 

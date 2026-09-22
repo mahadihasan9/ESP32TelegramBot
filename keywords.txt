@@ -8,6 +8,7 @@ status	KEYWORD2
 available	KEYWORD2
 name	KEYWORD2
 id	KEYWORD2
+chatId	KEYWORD2
 time	KEYWORD2
 message	KEYWORD2
 lastError	KEYWORD2

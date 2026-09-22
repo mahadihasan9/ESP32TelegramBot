@@ -40,7 +40,9 @@ String TelegramBot::_buildGetUpdatesUrl(int limit) {
     String url;
     url.reserve(64);
     url = "getUpdates?offset=";
-    url += String(_lastUpdateId + 1);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%lld", (long long)(_lastUpdateId + 1));
+    url += buf;
 
     if (limit > 0) {
         if (limit > TELEGRAM_MAX_LIMIT) {
@@ -52,17 +54,14 @@ String TelegramBot::_buildGetUpdatesUrl(int limit) {
     return url;
 }
 
-void TelegramBot::_updateOffset(JsonArray& results) {
-    for (JsonObject update : results) {
-        long uid = update["update_id"] | 0L;
-        if (uid > _lastUpdateId) {
-            _lastUpdateId = uid;
-        }
+void TelegramBot::_updateOffset(int64_t updateId) {
+    if (updateId >= _lastUpdateId) {
+        _lastUpdateId = updateId;
     }
 }
 
 void TelegramBot::_parseUpdate(JsonObject& update, getJson& out) {
-    out._updateId = update["update_id"] | 0L;
+    out._updateId = update["update_id"] | 0LL;
 
     JsonObject msg = update["message"];
     if (msg.isNull()) {
@@ -75,7 +74,7 @@ void TelegramBot::_parseUpdate(JsonObject& update, getJson& out) {
 
     JsonObject chat = msg["chat"];
     if (!chat.isNull()) {
-        out._chatId = chat["id"] | 0L;
+        out._chatId = chat["id"] | 0LL;
     }
 
     JsonObject from = msg["from"];
@@ -142,15 +141,15 @@ getJson TelegramBot::get(int limit) {
         return result;
     }
 
-    _updateOffset(results);
-
     JsonObject first = results[0];
+    int64_t uid = first["update_id"] | 0LL;
+    _updateOffset(uid);
     _parseUpdate(first, result);
 
     return result;
 }
 
-String TelegramBot::_buildSendMessageBody(long chatId, const String& text) {
+String TelegramBot::_buildSendMessageBody(int64_t chatId, const String& text) {
     JsonDocument doc;
     doc["chat_id"] = chatId;
     doc["text"] = text;
@@ -161,7 +160,7 @@ String TelegramBot::_buildSendMessageBody(long chatId, const String& text) {
     return body;
 }
 
-bool TelegramBot::post(long chatId, const String& text) {
+bool TelegramBot::post(int64_t chatId, const String& text) {
     _lastError = TELEGRAM_OK;
 
     if (WiFi.status() != WL_CONNECTED) {

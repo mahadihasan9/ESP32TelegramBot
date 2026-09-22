@@ -16,7 +16,7 @@ public:
     void begin(const String& token);
 
     getJson get(int limit = TELEGRAM_DEFAULT_LIMIT);
-    bool post(long chatId, const String& text);
+    bool post(int64_t chatId, const String& text);
 
     TelegramError lastError() const;
     String lastErrorMessage() const;
@@ -24,14 +24,14 @@ public:
 
 private:
     String _token;
-    long _lastUpdateId;
+    int64_t _lastUpdateId;
     TelegramError _lastError;
 
     Transport _transport;
 
     String _buildGetUpdatesUrl(int limit);
-    String _buildSendMessageBody(long chatId, const String& text);
-    void _updateOffset(JsonArray& results);
+    String _buildSendMessageBody(int64_t chatId, const String& text);
+    void _updateOffset(int64_t updateId);
     void _parseUpdate(JsonObject& update, getJson& out);
     void _resetGetJson(getJson& out);
 };
