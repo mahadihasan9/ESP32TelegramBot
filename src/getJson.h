@@ -28,7 +28,7 @@ private:
     long _messageId;
     long _timestamp;
 
-    friend class TelegramBot;
+    friend class ESP32TelegramBot;
 };
 
 #endif

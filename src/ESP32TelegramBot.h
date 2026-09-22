@@ -1,5 +1,5 @@
-#ifndef TELEGRAM_BOT_H
-#define TELEGRAM_BOT_H
+#ifndef ESP32_TELEGRAM_BOT_H
+#define ESP32_TELEGRAM_BOT_H
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -9,9 +9,9 @@
 #include "Transport.h"
 #include "getJson.h"
 
-class TelegramBot {
+class ESP32TelegramBot {
 public:
-    TelegramBot();
+    ESP32TelegramBot();
 
     void begin(const String& token);
 
@@ -37,3 +37,4 @@ private:
 };
 
 #endif
+

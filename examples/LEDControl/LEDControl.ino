@@ -1,9 +1,9 @@
-#include <TelegramBot.h>
+#include <ESP32TelegramBot.h>
 
 #define LED_PIN   2
 #define BOT_TOKEN "YOUR_BOT_TOKEN_HERE"
 
-TelegramBot myBot;
+ESP32TelegramBot myBot;
 
 void setup() {
     Serial.begin(115200);

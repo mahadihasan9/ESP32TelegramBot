@@ -1,5 +1,5 @@
 ================================================================================
-                           TELEGRAMBOT LIBRARY MANUAL
+                         ESP32TELEGRAMBOT LIBRARY MANUAL
                  Comprehensive Technical Documentation & API Guide
 ================================================================================
 
@@ -15,7 +15,7 @@ TABLE OF CONTENTS
 1. Architecture & Design Principles
 2. Installation & Prerequisites
 3. File & Directory Structure
-4. Core Class: TelegramBot
+4. Core Class: ESP32TelegramBot
    4.1 Constructor
    4.2 begin()
    4.3 get()
@@ -49,11 +49,11 @@ Embedded microcontrollers such as the ESP32 have limited SRAM and are prone to
 heap fragmentation if dynamic memory allocations are executed repeatedly inside
 the main application loop.
 
-TelegramBot addresses these constraints through three design decisions:
+ESP32TelegramBot addresses these constraints through three design decisions:
 
 1. Filtered JSON Deserialization:
    Telegram API responses contain extensive metadata (user attributes, chat
-   permissions, entities, reactions, dates). TelegramBot configures an
+   permissions, entities, reactions, dates). ESP32TelegramBot configures an
    ArduinoJson 7 filter document containing only the specific keys required
    by the application. Unmatched keys are skipped by the parser without allocating
    memory in the JSON document.
@@ -65,7 +65,7 @@ TelegramBot addresses these constraints through three design decisions:
    and transmission corruption.
 
 3. Atomic Offset Management:
-   Polling via getUpdates uses the Telegram offset mechanism. TelegramBot
+   Polling via getUpdates uses the Telegram offset mechanism. ESP32TelegramBot
    increments and confirms the offset only for the specific update that has been
    parsed and returned to the application. This ensures that no incoming messages
    are dropped when multiple updates arrive simultaneously.
@@ -80,40 +80,40 @@ Requirements:
 - ArduinoJson library version 7.0.0 or higher
 
 Installation Steps:
-1. Copy the TelegramBot repository folder into your Arduino libraries directory:
-   - Linux:   ~/Arduino/libraries/TelegramBot
-   - macOS:   ~/Documents/Arduino/libraries/TelegramBot
-   - Windows: Documents\Arduino\libraries\TelegramBot
+1. Copy the ESP32TelegramBot repository folder into your Arduino libraries directory:
+   - Linux:   ~/Arduino/libraries/ESP32TelegramBot
+   - macOS:   ~/Documents/Arduino/libraries/ESP32TelegramBot
+   - Windows: Documents\Arduino\libraries\ESP32TelegramBot
 2. In Arduino IDE, verify installation:
-   Sketch -> Include Library -> Contributed Libraries -> TelegramBot
+   Sketch -> Include Library -> Contributed Libraries -> ESP32TelegramBot
 
 
 ================================================================================
 3. FILE & DIRECTORY STRUCTURE
 ================================================================================
-TelegramBot/
+ESP32TelegramBot/
 ├── library.properties     Library manifest and dependencies
 ├── keywords.txt           Syntax highlighting definitions for Arduino IDE
 ├── README.md              Quickstart and repository documentation
 ├── doc.txt                Comprehensive technical manual
 ├── src/
-│   ├── TelegramBot.h      Public interface of the TelegramBot class
-│   ├── TelegramBot.cpp    Core polling and dispatch logic
+│   ├── ESP32TelegramBot.h Public interface of the ESP32TelegramBot class
+│   ├── ESP32TelegramBot.cpp Core polling and dispatch logic
 │   ├── getJson.h          Message data model header
 │   ├── getJson.cpp        Message data model implementation
 │   ├── Transport.h        HTTPS transport abstraction header
 │   ├── Transport.cpp      HTTPS transport abstraction implementation
 │   ├── TelegramConfig.h   Compile-time configuration constants
 │   └── TelegramError.h    Error definitions and string mappings
-└── example/
+└── examples/
     └── LEDControl/
         └── LEDControl.ino Fully functional hardware control example
 
 
 ================================================================================
-4. CORE CLASS: TelegramBot
+4. CORE CLASS: ESP32TelegramBot
 ================================================================================
-Header: #include <TelegramBot.h>
+Header: #include <ESP32TelegramBot.h>
 
 The primary interface for managing authentication, issuing HTTP polling requests,
 tracking offsets, and transmitting outgoing messages.
@@ -122,14 +122,14 @@ tracking offsets, and transmitting outgoing messages.
 4.1 Constructor
 --------------------------------------------------------------------------------
 Signature:
-    TelegramBot();
+    ESP32TelegramBot();
 
 Description:
     Instantiates the bot controller. Initializes the update offset to 0 and
     resets the internal error state to TELEGRAM_OK.
 
 Example:
-    TelegramBot bot;
+    ESP32TelegramBot bot;
 
 --------------------------------------------------------------------------------
 4.2 begin()
@@ -234,10 +234,10 @@ Returns:
 ================================================================================
 5. DATA CLASS: getJson
 ================================================================================
-Header: #include "getJson.h" (included automatically via <TelegramBot.h>)
+Header: #include "getJson.h" (included automatically via <ESP32TelegramBot.h>)
 
 A data container representing an incoming message update. Instances are returned
-by TelegramBot::get().
+by ESP32TelegramBot::get().
 
 --------------------------------------------------------------------------------
 5.1 Constructor & State
@@ -378,13 +378,13 @@ Compile-time parameters:
 9.1 Basic Echo Bot
 ------------------
 #include <WiFi.h>
-#include <TelegramBot.h>
+#include <ESP32TelegramBot.h>
 
 const char* ssid     = "YOUR_SSID";
 const char* password = "YOUR_PASSWORD";
 const char* token    = "YOUR_BOT_TOKEN";
 
-TelegramBot bot;
+ESP32TelegramBot bot;
 
 void setup() {
     Serial.begin(115200);
@@ -414,11 +414,11 @@ void loop() {
 9.2 Hardware Controller (Relay / LED)
 -------------------------------------
 #include <WiFi.h>
-#include <TelegramBot.h>
+#include <ESP32TelegramBot.h>
 
 #define RELAY_PIN 4
 
-TelegramBot bot;
+ESP32TelegramBot bot;
 
 void setup() {
     Serial.begin(115200);
@@ -493,5 +493,5 @@ A: By default, Telegram bots have "Privacy Mode" enabled. Open @BotFather,
    read group messages that do not start with a slash command.
 
 Q: Incoming messages with photos or documents are not returned.
-A: TelegramBot is optimized for text interactions. Media updates without text
+A: ESP32TelegramBot is optimized for text interactions. Media updates without text
    are filtered out to conserve ESP32 memory.

@@ -1,10 +1,10 @@
-#include "TelegramBot.h"
+#include "ESP32TelegramBot.h"
 
-TelegramBot::TelegramBot()
+ESP32TelegramBot::ESP32TelegramBot()
     : _lastUpdateId(0),
       _lastError(TELEGRAM_OK) {}
 
-void TelegramBot::begin(const String& token) {
+void ESP32TelegramBot::begin(const String& token) {
     _token = token;
     _transport.setToken(token);
     _transport.setTimeout(TELEGRAM_DEFAULT_TIMEOUT);
@@ -12,19 +12,19 @@ void TelegramBot::begin(const String& token) {
     _lastError = TELEGRAM_OK;
 }
 
-bool TelegramBot::connected() const {
+bool ESP32TelegramBot::connected() const {
     return WiFi.status() == WL_CONNECTED;
 }
 
-TelegramError TelegramBot::lastError() const {
+TelegramError ESP32TelegramBot::lastError() const {
     return _lastError;
 }
 
-String TelegramBot::lastErrorMessage() const {
+String ESP32TelegramBot::lastErrorMessage() const {
     return String(telegramErrorToString(_lastError));
 }
 
-void TelegramBot::_resetGetJson(getJson& out) {
+void ESP32TelegramBot::_resetGetJson(getJson& out) {
     out._status = false;
     out._available = false;
     out._firstName = "";
@@ -36,7 +36,7 @@ void TelegramBot::_resetGetJson(getJson& out) {
     out._timestamp = 0;
 }
 
-String TelegramBot::_buildGetUpdatesUrl(int limit) {
+String ESP32TelegramBot::_buildGetUpdatesUrl(int limit) {
     String url;
     url.reserve(64);
     url = "getUpdates?offset=";
@@ -54,13 +54,13 @@ String TelegramBot::_buildGetUpdatesUrl(int limit) {
     return url;
 }
 
-void TelegramBot::_updateOffset(int64_t updateId) {
+void ESP32TelegramBot::_updateOffset(int64_t updateId) {
     if (updateId >= _lastUpdateId) {
         _lastUpdateId = updateId;
     }
 }
 
-void TelegramBot::_parseUpdate(JsonObject& update, getJson& out) {
+void ESP32TelegramBot::_parseUpdate(JsonObject& update, getJson& out) {
     out._updateId = update["update_id"] | 0LL;
 
     JsonObject msg = update["message"];
@@ -87,7 +87,7 @@ void TelegramBot::_parseUpdate(JsonObject& update, getJson& out) {
     out._available = true;
 }
 
-getJson TelegramBot::get(int limit) {
+getJson ESP32TelegramBot::get(int limit) {
     getJson result;
     _resetGetJson(result);
     _lastError = TELEGRAM_OK;
@@ -149,7 +149,7 @@ getJson TelegramBot::get(int limit) {
     return result;
 }
 
-String TelegramBot::_buildSendMessageBody(int64_t chatId, const String& text) {
+String ESP32TelegramBot::_buildSendMessageBody(int64_t chatId, const String& text) {
     JsonDocument doc;
     doc["chat_id"] = chatId;
     doc["text"] = text;
@@ -160,7 +160,7 @@ String TelegramBot::_buildSendMessageBody(int64_t chatId, const String& text) {
     return body;
 }
 
-bool TelegramBot::post(int64_t chatId, const String& text) {
+bool ESP32TelegramBot::post(int64_t chatId, const String& text) {
     _lastError = TELEGRAM_OK;
 
     if (WiFi.status() != WL_CONNECTED) {
@@ -192,3 +192,4 @@ bool TelegramBot::post(int64_t chatId, const String& text) {
 
     return true;
 }
+

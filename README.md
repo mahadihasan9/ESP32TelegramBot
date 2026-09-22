@@ -1,4 +1,4 @@
-# TelegramBot
+# ESP32TelegramBot
 
 Lightweight, memory-efficient Telegram Bot library for ESP32 microcontrollers using ArduinoJson 7.x.
 
@@ -34,7 +34,7 @@ Designed specifically for embedded systems where heap memory and stability are c
 1. Download or clone this repository:
    ```bash
    cd ~/Arduino/libraries/
-   git clone https://github.com/mahadihasan9/TelegramBot.git
+   git clone https://github.com/mahadihasan9/ESP32TelegramBot.git
    ```
 2. Open the Arduino IDE.
 3. Install **ArduinoJson** (version 7.x) via **Library Manager** (`Sketch` -> `Include Library` -> `Manage Libraries...`).
@@ -48,14 +48,14 @@ This example connects to WiFi, listens for commands, and toggles the onboard LED
 
 ```cpp
 #include <WiFi.h>
-#include <TelegramBot.h>
+#include <ESP32TelegramBot.h>
 
 #define WIFI_SSID     "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 #define BOT_TOKEN     "YOUR_TELEGRAM_BOT_TOKEN"
 #define LED_PIN       2
 
-TelegramBot bot;
+ESP32TelegramBot bot;
 
 void setup() {
     Serial.begin(115200);
@@ -116,7 +116,7 @@ void loop() {
 
 ## API Reference
 
-### `TelegramBot` Class
+### `ESP32TelegramBot` Class
 
 | Method | Return Type | Description |
 | :--- | :--- | :--- |
