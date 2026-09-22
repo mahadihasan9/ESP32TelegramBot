@@ -2,6 +2,7 @@
 #define TELEGRAM_TRANSPORT_H
 
 #include <Arduino.h>
+#include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include "TelegramConfig.h"
