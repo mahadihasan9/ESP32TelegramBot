@@ -1,0 +1,497 @@
+================================================================================
+                           TELEGRAMBOT LIBRARY MANUAL
+                 Comprehensive Technical Documentation & API Guide
+================================================================================
+
+Target Architecture : ESP32 (all variants: standard, S2, S3, C3)
+Target Framework    : Arduino Core for ESP32
+JSON Engine         : ArduinoJson 7.x
+Protocol            : HTTPS (TLS 1.2 / 1.3) via WiFiClientSecure
+
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. Architecture & Design Principles
+2. Installation & Prerequisites
+3. File & Directory Structure
+4. Core Class: TelegramBot
+   4.1 Constructor
+   4.2 begin()
+   4.3 get()
+   4.4 post()
+   4.5 lastError()
+   4.6 lastErrorMessage()
+   4.7 connected()
+5. Data Class: getJson
+   5.1 Constructor & Lifecycle
+   5.2 status()
+   5.3 available()
+   5.4 name()
+   5.5 id() / chatId()
+   5.6 message()
+   5.7 time()
+6. Internal Transport: Transport
+7. Error Handling & Diagnostics (TelegramError)
+8. Configuration & Tuning (TelegramConfig.h)
+9. Step-by-Step Code Walkthroughs
+   9.1 Basic Echo Bot
+   9.2 Hardware Controller (Relay / LED / Sensor)
+   9.3 Command Parser with Arguments
+10. Memory Optimization & Production Guidelines
+11. Troubleshooting & FAQ
+
+
+================================================================================
+1. ARCHITECTURE & DESIGN PRINCIPLES
+================================================================================
+Embedded microcontrollers such as the ESP32 have limited SRAM and are prone to
+heap fragmentation if dynamic memory allocations are executed repeatedly inside
+the main application loop.
+
+TelegramBot addresses these constraints through three design decisions:
+
+1. Filtered JSON Deserialization:
+   Telegram API responses contain extensive metadata (user attributes, chat
+   permissions, entities, reactions, dates). TelegramBot configures an
+   ArduinoJson 7 filter document containing only the specific keys required
+   by the application. Unmatched keys are skipped by the parser without allocating
+   memory in the JSON document.
+
+2. 64-bit Integer Precision:
+   Telegram user identifiers and supergroup/channel identifiers routinely exceed
+   the capacity of 32-bit signed integers (long on 32-bit architectures).
+   All ID storage and transport interfaces utilize int64_t to prevent overflow
+   and transmission corruption.
+
+3. Atomic Offset Management:
+   Polling via getUpdates uses the Telegram offset mechanism. TelegramBot
+   increments and confirms the offset only for the specific update that has been
+   parsed and returned to the application. This ensures that no incoming messages
+   are dropped when multiple updates arrive simultaneously.
+
+
+================================================================================
+2. INSTALLATION & PREREQUISITES
+================================================================================
+Requirements:
+- Arduino IDE (v1.8.19 or v2.x) OR PlatformIO
+- ESP32 Board Package installed
+- ArduinoJson library version 7.0.0 or higher
+
+Installation Steps:
+1. Copy the TelegramBot repository folder into your Arduino libraries directory:
+   - Linux:   ~/Arduino/libraries/TelegramBot
+   - macOS:   ~/Documents/Arduino/libraries/TelegramBot
+   - Windows: Documents\Arduino\libraries\TelegramBot
+2. In Arduino IDE, verify installation:
+   Sketch -> Include Library -> Contributed Libraries -> TelegramBot
+
+
+================================================================================
+3. FILE & DIRECTORY STRUCTURE
+================================================================================
+TelegramBot/
+├── library.properties     Library manifest and dependencies
+├── keywords.txt           Syntax highlighting definitions for Arduino IDE
+├── README.md              Quickstart and repository documentation
+├── doc.txt                Comprehensive technical manual
+├── src/
+│   ├── TelegramBot.h      Public interface of the TelegramBot class
+│   ├── TelegramBot.cpp    Core polling and dispatch logic
+│   ├── getJson.h          Message data model header
+│   ├── getJson.cpp        Message data model implementation
+│   ├── Transport.h        HTTPS transport abstraction header
+│   ├── Transport.cpp      HTTPS transport abstraction implementation
+│   ├── TelegramConfig.h   Compile-time configuration constants
+│   └── TelegramError.h    Error definitions and string mappings
+└── example/
+    └── LEDControl/
+        └── LEDControl.ino Fully functional hardware control example
+
+
+================================================================================
+4. CORE CLASS: TelegramBot
+================================================================================
+Header: #include <TelegramBot.h>
+
+The primary interface for managing authentication, issuing HTTP polling requests,
+tracking offsets, and transmitting outgoing messages.
+
+--------------------------------------------------------------------------------
+4.1 Constructor
+--------------------------------------------------------------------------------
+Signature:
+    TelegramBot();
+
+Description:
+    Instantiates the bot controller. Initializes the update offset to 0 and
+    resets the internal error state to TELEGRAM_OK.
+
+Example:
+    TelegramBot bot;
+
+--------------------------------------------------------------------------------
+4.2 begin()
+--------------------------------------------------------------------------------
+Signature:
+    void begin(const String& token);
+
+Parameters:
+    token [const String&] : Telegram Bot API token obtained from @BotFather.
+
+Returns:
+    void
+
+Description:
+    Stores the authentication token, passes it to the underlying Transport layer,
+    applies default timeouts, and resets update tracking.
+
+Example:
+    bot.begin("123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ");
+
+--------------------------------------------------------------------------------
+4.3 get()
+--------------------------------------------------------------------------------
+Signature:
+    getJson get(int limit = TELEGRAM_DEFAULT_LIMIT);
+
+Parameters:
+    limit [int, optional] : Maximum number of updates to retrieve per request.
+                            Clamped between 1 and TELEGRAM_MAX_LIMIT (100).
+                            Defaults to 1.
+
+Returns:
+    getJson : Object populated with update data if a message is pending,
+              or an empty object if no updates exist or an error occurred.
+
+Description:
+    Issues an HTTPS GET request to the getUpdates endpoint.
+    Builds the request URL using the latest confirmed offset:
+    "getUpdates?offset=<lastUpdateId + 1>&limit=<limit>"
+    Deserializes the response using an ArduinoJson filter. If an update is
+    successfully retrieved, the internal offset is advanced to confirm receipt.
+
+Example:
+    getJson msg = bot.get();
+    if (msg.available()) {
+        Serial.println("New message received!");
+    }
+
+--------------------------------------------------------------------------------
+4.4 post()
+--------------------------------------------------------------------------------
+Signature:
+    bool post(int64_t chatId, const String& text);
+
+Parameters:
+    chatId [int64_t]      : Target Telegram chat identifier.
+    text   [const String&]: UTF-8 encoded text string to transmit.
+
+Returns:
+    bool : true if HTTP code was 200 and Telegram returned "ok": true.
+           false if transmission or API verification failed.
+
+Description:
+    Serializes a JSON payload {"chat_id": chatId, "text": text} and issues an
+    HTTPS POST request to the sendMessage endpoint.
+
+Example:
+    int64_t userChatId = msg.chatId();
+    bool success = bot.post(userChatId, "Operation completed successfully.");
+    if (!success) {
+        Serial.printf("Send failed: %s\n", bot.lastErrorMessage().c_str());
+    }
+
+--------------------------------------------------------------------------------
+4.5 lastError()
+--------------------------------------------------------------------------------
+Signature:
+    TelegramError lastError() const;
+
+Returns:
+    TelegramError : Enum code representing the status of the last executed call.
+
+--------------------------------------------------------------------------------
+4.6 lastErrorMessage()
+--------------------------------------------------------------------------------
+Signature:
+    String lastErrorMessage() const;
+
+Returns:
+    String : Plain text description of the last error code.
+
+--------------------------------------------------------------------------------
+4.7 connected()
+--------------------------------------------------------------------------------
+Signature:
+    bool connected() const;
+
+Returns:
+    bool : true if WiFi.status() == WL_CONNECTED; otherwise false.
+
+
+================================================================================
+5. DATA CLASS: getJson
+================================================================================
+Header: #include "getJson.h" (included automatically via <TelegramBot.h>)
+
+A data container representing an incoming message update. Instances are returned
+by TelegramBot::get().
+
+--------------------------------------------------------------------------------
+5.1 Constructor & State
+--------------------------------------------------------------------------------
+Signature:
+    getJson();
+
+Initial state:
+    status()    -> false
+    available() -> false
+    chatId()    -> 0
+    name()      -> ""
+    message()   -> ""
+    time()      -> 0
+
+--------------------------------------------------------------------------------
+5.2 status()
+--------------------------------------------------------------------------------
+Signature:
+    bool status() const;
+
+Returns:
+    bool : true if the network request and JSON deserialization succeeded.
+           false if network failed, JSON was invalid, or API returned an error.
+
+--------------------------------------------------------------------------------
+5.3 available()
+--------------------------------------------------------------------------------
+Signature:
+    bool available() const;
+
+Returns:
+    bool : true if a new, non-empty incoming message was parsed and is ready
+           to be processed. Always check this before extracting message fields.
+
+--------------------------------------------------------------------------------
+5.4 name()
+--------------------------------------------------------------------------------
+Signature:
+    String name() const;
+
+Returns:
+    String : Sender's first name. If a username is also present, returns
+             "FirstName Username". If sender details are absent, returns "".
+
+--------------------------------------------------------------------------------
+5.5 id() and chatId()
+--------------------------------------------------------------------------------
+Signatures:
+    int64_t id() const;
+    int64_t chatId() const;
+
+Returns:
+    int64_t : The 64-bit identifier of the chat where the message originated.
+              For private chats, this matches the user's ID.
+              For groups and channels, this is a negative 64-bit integer.
+              Both id() and chatId() return identical values.
+
+--------------------------------------------------------------------------------
+5.6 message()
+--------------------------------------------------------------------------------
+Signature:
+    String message() const;
+
+Returns:
+    String : The raw text content sent by the user.
+
+--------------------------------------------------------------------------------
+5.7 time()
+--------------------------------------------------------------------------------
+Signature:
+    long time() const;
+
+Returns:
+    long : Unix epoch timestamp (seconds since January 1, 1970).
+
+
+================================================================================
+6. INTERNAL TRANSPORT: Transport
+================================================================================
+Header: src/Transport.h
+
+The Transport class handles lower-level TLS/HTTPS communications.
+It wraps WiFiClientSecure and HTTPClient.
+
+Key characteristics:
+- Root CA verification is set to insecure (_client.setInsecure()) to prevent
+  failures caused by certificate expiry on resource-constrained microcontrollers.
+- HTTP client uses useHTTP10(true) to handle streaming responses predictably.
+- Configurable connection timeout via setTimeout(unsigned long ms).
+
+
+================================================================================
+7. ERROR HANDLING & DIAGNOSTICS: TelegramError
+================================================================================
+Header: src/TelegramError.h
+
+Enum Definitions:
++---------------------+-------+-----------------------------------------------+
+| Error Enum          | Value | Description                                   |
++---------------------+-------+-----------------------------------------------+
+| TELEGRAM_OK         |   0   | Last operation succeeded.                     |
+| TELEGRAM_ERR_WIFI   |   1   | WiFi not connected (WL_CONNECTED check failed)|
+| TELEGRAM_ERR_HTTP   |   2   | HTTP request failed or returned status != 200 |
+| TELEGRAM_ERR_JSON   |   3   | DeserializationError during JSON parse        |
+| TELEGRAM_ERR_API    |   4   | Telegram returned {"ok": false}               |
+| TELEGRAM_ERR_EMPTY  |   5   | Response was valid but contained no updates   |
+| TELEGRAM_ERR_MEMORY |   6   | Insufficient RAM for buffer allocation        |
++---------------------+-------+-----------------------------------------------+
+
+Helper Function:
+const char* telegramErrorToString(TelegramError err);
+    Converts any TelegramError enum value into a human-readable C-string.
+
+
+================================================================================
+8. CONFIGURATION & TUNING: TelegramConfig.h
+================================================================================
+Header: src/TelegramConfig.h
+
+Compile-time parameters:
+
+#define TELEGRAM_DEFAULT_LIMIT   1
+    Controls the default number of updates requested per get() poll. Keeping
+    this at 1 minimizes memory usage per call on ESP32.
+
+#define TELEGRAM_MAX_LIMIT       100
+    Upper ceiling accepted by the Telegram Bot API getUpdates endpoint.
+
+#define TELEGRAM_DEFAULT_TIMEOUT 10000
+    HTTPS connection and socket read timeout in milliseconds (10 seconds).
+
+
+================================================================================
+9. STEP-BY-STEP CODE WALKTHROUGHS
+================================================================================
+
+9.1 Basic Echo Bot
+------------------
+#include <WiFi.h>
+#include <TelegramBot.h>
+
+const char* ssid     = "YOUR_SSID";
+const char* password = "YOUR_PASSWORD";
+const char* token    = "YOUR_BOT_TOKEN";
+
+TelegramBot bot;
+
+void setup() {
+    Serial.begin(115200);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("\nWiFi Connected");
+
+    bot.begin(token);
+}
+
+void loop() {
+    getJson msg = bot.get();
+
+    if (msg.available()) {
+        int64_t chat = msg.chatId();
+        String reply = "You said: " + msg.message();
+        bot.post(chat, reply);
+    }
+
+    delay(1000);
+}
+
+
+9.2 Hardware Controller (Relay / LED)
+-------------------------------------
+#include <WiFi.h>
+#include <TelegramBot.h>
+
+#define RELAY_PIN 4
+
+TelegramBot bot;
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(RELAY_PIN, OUTPUT);
+    digitalWrite(RELAY_PIN, LOW);
+
+    WiFi.begin("SSID", "PASS");
+    while (WiFi.status() != WL_CONNECTED) delay(500);
+
+    bot.begin("BOT_TOKEN");
+}
+
+void loop() {
+    getJson msg = bot.get();
+
+    if (msg.available()) {
+        int64_t chat = msg.chatId();
+        String cmd = msg.message();
+        cmd.trim();
+        cmd.toLowerCase();
+
+        if (cmd == "/relay_on") {
+            digitalWrite(RELAY_PIN, HIGH);
+            bot.post(chat, "Relay activated.");
+        } else if (cmd == "/relay_off") {
+            digitalWrite(RELAY_PIN, LOW);
+            bot.post(chat, "Relay deactivated.");
+        } else if (cmd == "/status") {
+            int state = digitalRead(RELAY_PIN);
+            bot.post(chat, state ? "State: ON" : "State: OFF");
+        } else {
+            bot.post(chat, "Valid commands: /relay_on, /relay_off, /status");
+        }
+    }
+
+    delay(1000);
+}
+
+
+================================================================================
+10. MEMORY OPTIMIZATION & PRODUCTION GUIDELINES
+================================================================================
+1. Polling Cadence:
+   Always place a delay(500) to delay(1500) inside loop(). Polling too
+   frequently can saturate the ESP32 network stack and trigger HTTP 429
+   (Too Many Requests) from the Telegram API.
+
+2. Watchdog Timer (WDT):
+   TLS negotiation on ESP32 can take up to 1000ms. Keep your loop responsive
+   and avoid long blocking calls (delay() > 5000) that could trip the FreeRTOS
+   task watchdog.
+
+3. Chat ID Storage:
+   Always use int64_t when saving chat IDs in variables, structures, or EEPROM/NVS.
+   Do not cast to int or long, or channel/supergroup interactions will fail.
+
+
+================================================================================
+11. TROUBLESHOOTING & FAQ
+================================================================================
+
+Q: bot.get() returns status() == false with TELEGRAM_ERR_WIFI.
+A: Check that WiFi.status() == WL_CONNECTED before invoking bot methods.
+
+Q: bot.get() returns status() == false with TELEGRAM_ERR_HTTP.
+A: Verify that the bot token is correct, that the network has internet access,
+   and that outgoing HTTPS traffic on port 443 is not blocked by a firewall.
+
+Q: The bot responds to messages sent directly to it, but not in a group.
+A: By default, Telegram bots have "Privacy Mode" enabled. Open @BotFather,
+   send /setprivacy, choose your bot, and set it to "Disable" so the bot can
+   read group messages that do not start with a slash command.
+
+Q: Incoming messages with photos or documents are not returned.
+A: TelegramBot is optimized for text interactions. Media updates without text
+   are filtered out to conserve ESP32 memory.
