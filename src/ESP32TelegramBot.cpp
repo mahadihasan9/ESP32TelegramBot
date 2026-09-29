@@ -28,6 +28,7 @@ void ESP32TelegramBot::_resetGetJson(getJson& out) {
     out._status = false;
     out._available = false;
     out._firstName = "";
+    out._lastName = "";
     out._username = "";
     out._text = "";
     out._chatId = 0;
@@ -80,6 +81,7 @@ void ESP32TelegramBot::_parseUpdate(JsonObject& update, getJson& out) {
     JsonObject from = msg["from"];
     if (!from.isNull()) {
         out._firstName = from["first_name"] | "";
+        out._lastName = from["last_name"] | "";
         out._username = from["username"] | "";
     }
 
@@ -113,6 +115,7 @@ getJson ESP32TelegramBot::get(int limit) {
     filter["result"][0]["message"]["text"] = true;
     filter["result"][0]["message"]["chat"]["id"] = true;
     filter["result"][0]["message"]["from"]["first_name"] = true;
+    filter["result"][0]["message"]["from"]["last_name"] = true;
     filter["result"][0]["message"]["from"]["username"] = true;
 
     JsonDocument doc;

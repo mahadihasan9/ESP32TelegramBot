@@ -7,6 +7,9 @@ post	KEYWORD2
 status	KEYWORD2
 available	KEYWORD2
 name	KEYWORD2
+firstName	KEYWORD2
+lastName	KEYWORD2
+username	KEYWORD2
 id	KEYWORD2
 chatId	KEYWORD2
 time	KEYWORD2

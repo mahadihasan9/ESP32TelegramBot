@@ -17,15 +17,27 @@ bool getJson::available() const {
 }
 
 String getJson::name() const {
-    if (_username.length() > 0) {
+    if (_lastName.length() > 0) {
         String result;
-        result.reserve(_firstName.length() + _username.length() + 1);
+        result.reserve(_firstName.length() + _lastName.length() + 1);
         result = _firstName;
         result += " ";
-        result += _username;
+        result += _lastName;
         return result;
     }
     return _firstName;
+}
+
+String getJson::firstName() const {
+    return _firstName;
+}
+
+String getJson::lastName() const {
+    return _lastName;
+}
+
+String getJson::username() const {
+    return _username;
 }
 
 int64_t getJson::id() const {

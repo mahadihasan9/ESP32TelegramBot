@@ -280,11 +280,31 @@ Signature:
     String name() const;
 
 Returns:
-    String : Sender's first name. If a username is also present, returns
-             "FirstName Username". If sender details are absent, returns "".
+    String : Sender's full name. If last_name is present, returns
+             "FirstName LastName" (separated by a space). If last_name is
+             absent, returns first_name.
 
 --------------------------------------------------------------------------------
-5.5 id() and chatId()
+5.5 firstName() and lastName()
+--------------------------------------------------------------------------------
+Signatures:
+    String firstName() const;
+    String lastName() const;
+
+Returns:
+    String : Individual first or last name components of the sender.
+
+--------------------------------------------------------------------------------
+5.6 username()
+--------------------------------------------------------------------------------
+Signature:
+    String username() const;
+
+Returns:
+    String : Sender's Telegram username (without @), or empty string if not set.
+
+--------------------------------------------------------------------------------
+5.7 id() and chatId()
 --------------------------------------------------------------------------------
 Signatures:
     int64_t id() const;

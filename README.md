@@ -135,7 +135,10 @@ void loop() {
 | :--- | :--- | :--- |
 | `status()` | `bool` | `true` if HTTP request and JSON parsing were successful. |
 | `available()` | `bool` | `true` if a new message was received and contains valid data. |
-| `name()` | `String` | Returns sender's first name, or "FirstName Username" if username is available. |
+| `name()` | `String` | Returns sender's full name ("FirstName LastName"). |
+| `firstName()` | `String` | Returns sender's first name. |
+| `lastName()` | `String` | Returns sender's last name. |
+| `username()` | `String` | Returns sender's Telegram username (without `@`). |
 | `chatId()` / `id()` | `int64_t` | Returns unique 64-bit chat identifier. |
 | `message()` | `String` | Returns the text content of the message. |
 | `time()` | `long` | Returns message creation time (Unix timestamp). |

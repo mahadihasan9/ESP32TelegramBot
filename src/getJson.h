@@ -11,6 +11,9 @@ public:
     bool available() const;
 
     String name() const;
+    String firstName() const;
+    String lastName() const;
+    String username() const;
     int64_t id() const;
     int64_t chatId() const;
     long time() const;
@@ -21,6 +24,7 @@ private:
     bool _available;
 
     String _firstName;
+    String _lastName;
     String _username;
     String _text;
     int64_t _chatId;
