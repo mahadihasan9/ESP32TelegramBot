@@ -76,7 +76,7 @@ void setup() {
 void loop() {
     getJson msg = bot.get();
 
-    if (!msg.status() || !msg.available()) {
+    if (!msg.available()) {
         delay(1000);
         return;
     }
